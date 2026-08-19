@@ -1,14 +1,14 @@
 <?php
 
 namespace Database\Seeders;
+
+use App\Models\Pengguna;
 use Illuminate\Database\Seeder;
 
-class DatabaseSeeder extends Seeder
+class PenggunaSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
-            PenggunaSeeder::class,
-        ]);
+        Pengguna::factory()->count(130)->create();
     }
 }
