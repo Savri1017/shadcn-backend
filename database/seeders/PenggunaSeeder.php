@@ -9,6 +9,6 @@ class PenggunaSeeder extends Seeder
 {
     public function run(): void
     {
-        Pengguna::factory()->count(130)->create();
+        Pengguna::factory()->count(180)->create();
     }
 }
