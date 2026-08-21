@@ -7,28 +7,65 @@ use Illuminate\Http\Request;
 
 class PenggunaController extends Controller
 {
-    public function index() {
-        return response()->json(Pengguna::all());
+    public function index(Request $request)
+    {
+        // Statistik dihitung dari SELURUH data (bukan yang kefilter search),
+        // supaya kartu ringkasan di atas tabel selalu nunjukin total keseluruhan.
+        $stats = [
+            'total'   => Pengguna::count(),
+            'admin'   => Pengguna::where('peran', 'Admin')->count(),
+            'manager' => Pengguna::where('peran', 'Manager')->count(),
+            'staff'   => Pengguna::where('peran', 'Staff')->count(),
+        ];
+
+        $query = Pengguna::query();
+
+        if ($request->filled('search')) {
+            $keyword = $request->search;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('nama', 'like', "%{$keyword}%")
+                  ->orWhere('email', 'like', "%{$keyword}%")
+                  ->orWhere('peran', 'like', "%{$keyword}%");
+            });
+        }
+
+        // Urutan prioritas: Admin, Manager, Staff, sisanya
+        $query->orderByRaw("CASE peran WHEN 'Admin' THEN 1 WHEN 'Manager' THEN 2 WHEN 'Staff' THEN 3 ELSE 4 END");
+
+        $perPage = (int) $request->input('per_page', 10);
+        $paginated = $query->paginate($perPage);
+
+        return response()->json([
+            'data'         => $paginated->items(),
+            'current_page' => $paginated->currentPage(),
+            'last_page'    => $paginated->lastPage(),
+            'per_page'     => $paginated->perPage(),
+            'total'        => $paginated->total(),
+            'stats'        => $stats,
+        ]);
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $data = $request->validate([
-            'nama' => 'required|string',
+            'nama'  => 'required|string',
             'email' => 'required|email',
-            'peran' => 'required|string'
+            'peran' => 'required|string',
         ]);
-        
+
         $pengguna = Pengguna::create($data);
         return response()->json($pengguna, 201);
     }
 
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         $pengguna = Pengguna::findOrFail($id);
         $pengguna->update($request->all());
         return response()->json($pengguna);
     }
 
-    public function destroy($id) {
+    public function destroy($id)
+    {
         Pengguna::destroy($id);
         return response()->json(['message' => 'Berhasil dihapus']);
     }
