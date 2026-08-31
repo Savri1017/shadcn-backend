@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Jabatan;
 use App\Models\Media;
 use App\Models\Pengguna;
@@ -16,7 +15,7 @@ class MediaController extends Controller
             'pengguna' => Pengguna::class,
             'jabatan' => Jabatan::class,
         ];
-
+        
         abort_unless(isset($models[$type]), 422, 'Tipe data tidak didukung.');
 
         return $models[$type]::findOrFail($id);
@@ -26,7 +25,6 @@ class MediaController extends Controller
     {
         $model = $this->resolveModel($type, $id);
         $collection = $request->input('collection');
-
         $query = $model->media()->latest();
 
         if ($collection) {
@@ -39,7 +37,6 @@ class MediaController extends Controller
     public function store(Request $request, string $type, int $id)
     {
         $model = $this->resolveModel($type, $id);
-
         $data = $request->validate([
             'file' => 'required|file|mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx|max:10240',
             'collection' => 'nullable|string|max:100',
