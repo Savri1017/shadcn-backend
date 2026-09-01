@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Pengguna extends Model
 {
     use HasFactory;
-
     protected $fillable = [
         'nama',
         'email',
