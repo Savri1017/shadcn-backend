@@ -9,6 +9,8 @@ class PenggunaController extends Controller
 {
     public function index(Request $request)
     {
+        // Statistik dihitung dari SELURUH data (bukan yang kefilter search),
+        // supaya kartu ringkasan di atas tabel selalu nunjukin total keseluruhan.
         $stats = [
             'total'   => Pengguna::count(),
             'admin'   => Pengguna::where('peran', 'Admin')->count(),
@@ -27,6 +29,7 @@ class PenggunaController extends Controller
             });
         }
 
+        // Urutan prioritas: Admin, Manager, Staff, sisanya
         $query->orderByRaw("CASE peran WHEN 'Admin' THEN 1 WHEN 'Manager' THEN 2 WHEN 'Staff' THEN 3 ELSE 4 END");
 
         $perPage = (int) $request->input('per_page', 10);
@@ -52,6 +55,15 @@ class PenggunaController extends Controller
 
         $pengguna = Pengguna::create($data);
         return response()->json($pengguna, 201);
+    }
+
+    // Dipakai halaman Profil buat ambil data 1 pengguna spesifik.
+    // Route-nya sebenarnya udah otomatis kebuat dari Route::apiResource,
+    // tinggal disini aja yang belum ada method-nya.
+    public function show($id)
+    {
+        $pengguna = Pengguna::findOrFail($id);
+        return response()->json($pengguna);
     }
 
     public function update(Request $request, $id)

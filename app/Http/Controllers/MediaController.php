@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Jabatan;
 use App\Models\Media;
 use App\Models\Pengguna;
@@ -9,54 +10,47 @@ use Illuminate\Support\Facades\Storage;
 
 class MediaController extends Controller
 {
-    private function resolveModel(string $type, int $id)
-    {
-        $models = [
-            'pengguna' => Pengguna::class,
-            'jabatan' => Jabatan::class,
-        ];
-        
-        abort_unless(isset($models[$type]), 422, 'Tipe data tidak didukung.');
-
-        return $models[$type]::findOrFail($id);
-    }
-
-    public function index(string $type, int $id, Request $request)
+    public function index(Request $request, string $type, int $id)
     {
         $model = $this->resolveModel($type, $id);
-        $collection = $request->input('collection');
-        $query = $model->media()->latest();
 
-        if ($collection) {
-            $query->where('collection', $collection);
-        }
+        // ?collection=avatar atau ?collection=dokumen -> hanya ambil baris
+        // di tabel media yang collection-nya cocok. Kalau parameter ini
+        // tidak dikirim, semua media milik model tetap dikembalikan
+        // (sama seperti perilaku lama, jadi tidak mematahkan kode lama).
+        $media = $model->media()
+            ->when(
+                $request->filled('collection'),
+                fn ($query) => $query->where('collection', $request->query('collection'))
+            )
+            ->latest()
+            ->get();
 
-        return response()->json($query->get());
+        return response()->json($media);
     }
 
     public function store(Request $request, string $type, int $id)
     {
         $model = $this->resolveModel($type, $id);
-        $data = $request->validate([
-            'file' => 'required|file|mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx|max:10240',
-            'collection' => 'nullable|string|max:100',
-            'alt_text' => 'nullable|string|max:255',
-            'replace' => 'nullable|boolean',
+
+        $collection = $request->input('collection', 'default');
+
+        // Aturan file beda-beda tergantung collection-nya, walau tetap
+        // masuk ke tabel `media` yang sama. Avatar wajib gambar,
+        // collection lain (misal 'dokumen') boleh dokumen kantor juga.
+        $mimeRule = $collection === 'avatar'
+            ? 'mimes:jpg,jpeg,png,webp'
+            : 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx';
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:10240', $mimeRule],
+            'collection' => ['nullable', 'string', 'max:100'],
+            'alt_text' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $collection = $data['collection'] ?? 'default';
-
-        if ($request->boolean('replace')) {
-            $oldMedia = $model->media()->where('collection', $collection)->get();
-
-            foreach ($oldMedia as $media) {
-                Storage::disk($media->disk)->delete($media->path);
-                $media->delete();
-            }
-        }
-
-        $file = $request->file('file');
-        $path = $file->store("media/{$type}/{$id}/{$collection}", 'public');
+        $file = $validated['file'];
+        $collection = $validated['collection'] ?? 'default';
+        $path = $file->store('media/'.$type.'/'.$model->getKey().'/'.$collection, 'public');
 
         $media = $model->media()->create([
             'collection' => $collection,
@@ -66,7 +60,7 @@ class MediaController extends Controller
             'disk' => 'public',
             'path' => $path,
             'size' => $file->getSize(),
-            'alt_text' => $data['alt_text'] ?? null,
+            'alt_text' => $validated['alt_text'] ?? null,
         ]);
 
         return response()->json($media, 201);
@@ -78,5 +72,14 @@ class MediaController extends Controller
         $media->delete();
 
         return response()->json(['message' => 'File berhasil dihapus']);
+    }
+
+    private function resolveModel(string $type, int $id)
+    {
+        return match ($type) {
+            'pengguna' => Pengguna::findOrFail($id),
+            'jabatan' => Jabatan::findOrFail($id),
+            default => abort(404, 'Tipe media tidak didukung.'),
+        };
     }
 }
