@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 
 class JabatanController extends Controller
 {
-    // Dipanggil combobox di form tambah/edit pengguna
     public function index()
     {
         return response()->json(Jabatan::orderBy('nama_jabatan')->get());
