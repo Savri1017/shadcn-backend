@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Jabatan;
 use App\Models\Media;
 use App\Models\Pengguna;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class MediaController extends Controller
 {
-    public function indexForPengguna(Pengguna $pengguna)
+    public function index(string $type, int $id)
     {
-        return response()->json($pengguna->media()->latest()->get());
+        $model = $this->resolveModel($type, $id);
+        return response()->json($model->media()->latest()->get());
     }
 
-    public function storeForPengguna(Request $request, Pengguna $pengguna)
+    public function store(Request $request, string $type, int $id)
     {
+        $model = $this->resolveModel($type, $id);
+
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx'],
             'collection' => ['nullable', 'string', 'max:100'],
@@ -24,9 +28,9 @@ class MediaController extends Controller
 
         $file = $validated['file'];
         $collection = $validated['collection'] ?? 'default';
-        $path = $file->store('media/pengguna/'.$pengguna->id.'/'.$collection, 'public');
+        $path = $file->store('media/'.$type.'/'.$model->getKey().'/'.$collection, 'public');
 
-        $media = $pengguna->media()->create([
+        $media = $model->media()->create([
             'collection' => $collection,
             'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             'file_name' => $file->getClientOriginalName(),
@@ -42,12 +46,18 @@ class MediaController extends Controller
 
     public function destroy(Media $media)
     {
-        if ($media->disk === 'public') {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($media->path);
-        }
-
+        Storage::disk($media->disk)->delete($media->path);
         $media->delete();
 
         return response()->json(['message' => 'File berhasil dihapus']);
+    }
+
+    private function resolveModel(string $type, int $id)
+    {
+        return match ($type) {
+            'pengguna' => Pengguna::findOrFail($id),
+            'jabatan' => Jabatan::findOrFail($id),
+            default => abort(404, 'Tipe media tidak didukung.'),
+        };
     }
 }
