@@ -8,6 +8,6 @@ use App\Http\Controllers\MediaController;
 Route::apiResource('penggunas', PenggunaController::class);
 Route::apiResource('jabatans', JabatanController::class)->only(['index', 'store']);
 
-Route::get('media/pengguna/{pengguna}', [MediaController::class, 'indexForPengguna']);
-Route::post('media/pengguna/{pengguna}', [MediaController::class, 'storeForPengguna']);
+Route::get('media/{type}/{id}', [MediaController::class, 'index']);
+Route::post('media/{type}/{id}', [MediaController::class, 'store']);
 Route::delete('media/{media}', [MediaController::class, 'destroy']);
