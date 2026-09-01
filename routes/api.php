@@ -8,7 +8,6 @@ use App\Http\Controllers\JabatanController;
 Route::apiResource('penggunas', PenggunaController::class);
 Route::apiResource('jabatans', JabatanController::class)->only(['index', 'store']);
 
-// Satu tabel media untuk file milik berbagai model (polymorphic).
 Route::get('media/{type}/{id}', [MediaController::class, 'index']);
 Route::post('media/{type}/{id}', [MediaController::class, 'store']);
 Route::delete('media/{media}', [MediaController::class, 'destroy']);

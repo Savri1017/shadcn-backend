@@ -9,8 +9,6 @@ class PenggunaController extends Controller
 {
     public function index(Request $request)
     {
-        // Statistik dihitung dari SELURUH data (bukan yang kefilter search),
-        // supaya kartu ringkasan di atas tabel selalu nunjukin total keseluruhan.
         $stats = [
             'total'   => Pengguna::count(),
             'admin'   => Pengguna::where('peran', 'Admin')->count(),
