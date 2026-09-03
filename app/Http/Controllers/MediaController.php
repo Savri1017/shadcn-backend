@@ -42,14 +42,14 @@ class MediaController extends Controller
 
         $file = $validated['file'];
         $collection = $validated['collection'] ?? 'default';
-        $path = $file->store('media/'.$type.'/'.$model->getKey().'/'.$collection, 'public');
+        $path = $file->store('media/'.$type.'/'.$model->getKey().'/'.$collection, 'private');
 
         $media = $model->media()->create([
             'collection' => $collection,
             'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             'file_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
-            'disk' => 'public',
+            'disk' => 'private',
             'path' => $path,
             'size' => $file->getSize(),
             'alt_text' => $validated['alt_text'] ?? null,
