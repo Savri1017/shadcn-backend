@@ -11,9 +11,9 @@ class PenggunaController extends Controller
     {
         $stats = [
             'total'   => Pengguna::count(),
-            'admin'   => Pengguna::where('peran', 'Admin')->count(),
-            'manager' => Pengguna::where('peran', 'Manager')->count(),
-            'staff'   => Pengguna::where('peran', 'Staff')->count(),
+            'admin'   => Pengguna::where('jabatan', 'Admin')->count(),
+            'manager' => Pengguna::where('jabatan', 'Manager')->count(),
+            'staff'   => Pengguna::where('jabatan', 'Staff')->count(),
         ];
 
         $query = Pengguna::query();
@@ -23,12 +23,12 @@ class PenggunaController extends Controller
             $query->where(function ($q) use ($keyword) {
                 $q->where('nama', 'like', "%{$keyword}%")
                   ->orWhere('email', 'like', "%{$keyword}%")
-                  ->orWhere('peran', 'like', "%{$keyword}%");
+                  ->orWhere('jabatan', 'like', "%{$keyword}%");
             });
         }
 
         // Urutan prioritas: Admin, Manager, Staff, sisanya
-        $query->orderByRaw("CASE peran WHEN 'Admin' THEN 1 WHEN 'Manager' THEN 2 WHEN 'Staff' THEN 3 ELSE 4 END");
+        $query->orderByRaw("CASE jabatan WHEN 'Admin' THEN 1 WHEN 'Manager' THEN 2 WHEN 'Staff' THEN 3 ELSE 4 END");
 
         $perPage = (int) $request->input('per_page', 10);
         $paginated = $query->paginate($perPage);
@@ -48,7 +48,7 @@ class PenggunaController extends Controller
         $data = $request->validate([
             'nama'  => 'required|string',
             'email' => 'required|email',
-            'peran' => 'required|string',
+            'jabatan' => 'required|string',
         ]);
 
         $pengguna = Pengguna::create($data);
@@ -60,7 +60,7 @@ class PenggunaController extends Controller
     // tinggal disini aja yang belum ada method-nya.
     public function show($id)
     {
-        $pengguna = Pengguna::findOrFail($id);
+        $pengguna = Pengguna::with('media')->findOrFail($id);
         return response()->json($pengguna);
     }
 

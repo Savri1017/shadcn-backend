@@ -14,10 +14,6 @@ class MediaController extends Controller
     {
         $model = $this->resolveModel($type, $id);
 
-        // ?collection=avatar atau ?collection=dokumen -> hanya ambil baris
-        // di tabel media yang collection-nya cocok. Kalau parameter ini
-        // tidak dikirim, semua media milik model tetap dikembalikan
-        // (sama seperti perilaku lama, jadi tidak mematahkan kode lama).
         $media = $model->media()
             ->when(
                 $request->filled('collection'),
@@ -32,12 +28,8 @@ class MediaController extends Controller
     public function store(Request $request, string $type, int $id)
     {
         $model = $this->resolveModel($type, $id);
-
         $collection = $request->input('collection', 'default');
-
-        // Aturan file beda-beda tergantung collection-nya, walau tetap
-        // masuk ke tabel `media` yang sama. Avatar wajib gambar,
-        // collection lain (misal 'dokumen') boleh dokumen kantor juga.
+        
         $mimeRule = $collection === 'avatar'
             ? 'mimes:jpg,jpeg,png,webp'
             : 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx';
